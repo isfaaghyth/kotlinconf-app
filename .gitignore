@@ -25,3 +25,4 @@ Pods/
 .classpath
 
 iosApp/iosApp/GoogleService-Info.plist
+androidApp/google-services.json

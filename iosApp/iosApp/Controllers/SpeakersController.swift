@@ -46,7 +46,7 @@ class SpeakersController : UIViewController, UITableViewDataSource, UITableViewD
         if (section == speakers.count - 1) {
             return 100
         }
-        
+
         return 20
     }
 
@@ -99,12 +99,6 @@ class SpeakerCellView : UITableViewCell {
                 )
 
                 Nuke.loadImage(with: request, into: speakerPhoto)
-
-//
-//                Nuke.loadImage(
-//                    with:
-//                    into: speakerPhoto
-//                )
             }
         }
     }

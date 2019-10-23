@@ -8,7 +8,7 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/live_card"
-        android:layout_width="342dp"
+        android:layout_width="300dp"
         android:layout_height="276dp"
         android:layout_marginStart="10dp"
         android:layout_marginLeft="10dp"

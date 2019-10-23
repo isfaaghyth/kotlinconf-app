@@ -4,11 +4,9 @@ import org.jetbrains.kotlinconf.storage.*
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
 expect class NotificationManager(context: ApplicationContext) {
-    suspend fun isEnabled(): Boolean
+    fun requestPermission()
 
-    suspend fun requestPermission(): Boolean
+    fun schedule(delay: Long, title: String, message: String): String?
 
-    suspend fun schedule(sessionData: SessionData): String?
-
-    fun cancel(sessionData: SessionData)
+    fun cancel(title: String)
 }

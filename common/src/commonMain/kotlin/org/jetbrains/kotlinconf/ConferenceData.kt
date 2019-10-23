@@ -50,7 +50,7 @@ val SessionData.url: String
     get() = buildString {
         val day = startsAt.dayOfMonth
         append("https://kotlinconf.com/talks/")
-        append("$day-dec?sessionId=$id")
+        append("$day-dec/$id")
     }
 
 @Serializable
@@ -132,7 +132,7 @@ class LiveVideo(val room: Int, val videoId: String)
  * TODO: remove when serialization supports typeOf<EnumClass>()
  */
 @Serializable
-class RatingData(val value: Int) {
+data class RatingData(val value: Int) {
     companion object {
         val BAD = RatingData(-1)
         val OK = RatingData(0)

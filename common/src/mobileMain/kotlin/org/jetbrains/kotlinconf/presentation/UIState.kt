@@ -33,6 +33,15 @@ class SessionCard(
 )
 
 /**
+ * Session card time label text.
+ */
+fun SessionCard.displayTime(): String = buildString {
+    append(date)
+    append(" ")
+    append(time)
+}
+
+/**
  * Room name to display.
  */
 fun RoomData.displayName(): String {

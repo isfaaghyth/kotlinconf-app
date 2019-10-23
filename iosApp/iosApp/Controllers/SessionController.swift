@@ -49,7 +49,6 @@ class SessionController: UIViewController, UIScrollViewDelegate {
         titleLabel.attributedText = TextWithLineHeight(text: session.title.uppercased(), height: 57)
 
         // Description
-
         descriptionLabel.text = session.descriptionText
         descriptionLabel.attributedText = TextWithLineHeight(text: session.descriptionText!, height: 24)
 
@@ -78,7 +77,6 @@ class SessionController: UIViewController, UIScrollViewDelegate {
         }
 
         // Location
-
         locationLabel.setTitle(card.location.displayName(), for: .normal)
 
         // Favorite

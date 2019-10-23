@@ -16,10 +16,11 @@ object Partners {
         Partner("instill", "Instill", "https://www.instil.co", "partner table-instil"),
         Partner("gradle", "Gradle", "https://gradle.com/", "partner table-gradle"),
         Partner("n26", "N26", "https://n26.com/", "partner table-n26"),
-        Partner("kodein", "Kodein", "https://kodein.net", "partner table-kodein"),
+        Partner("kodein", "Kodein", "https://kodein.net", "partner table-kodeinkoders"),
         Partner("data2viz", "Data2Viz", "https://data2viz.io/", "partner table-data2viz"),
         Partner("pleo", "Pleo", "https://www.pleo.io", "partner table-pleo"),
-        Partner("shape", "Shape", "https://www.shape.dk/", "partner table-shape")
+        Partner("shape", "Shape", "https://www.shape.dk/", "partner table-shape"),
+        Partner("badoo", "Badoo", "https://badoo.com/en/", "partner table-badoo")
     )
 
     private val descriptions = mutableMapOf(
@@ -33,7 +34,8 @@ object Partners {
         "kodein" to "Kodein Koders is the first startup in Europe to be entirely dedicated to Kotlin, anywhere Kotlin goes! From the ground up, we invested into making the Kodein Framework the first Open-Source Kotlin/Multiplatform Framework.",
         "data2viz" to "Data2viz is a company that creates libraries and tools for data-visualizations. We base our solutions on Kotlin, deeply convinced by the vast benefits it can provide to manipulate data and render the visualizations on different platforms: mobiles, web, and desktop.",
         "pleo" to "Pleo is a fundamentally new way to manage company expenses. Offering smart payment cards to employees, Pleo enables everyone to buy whatever they need for work, all the while making sure the company remains in full control of spending.",
-        "shape" to "Shape is an award winning digital product studio. We are a team of 70+ devoted in-house developers, designers and strategists that combine innovation with digital craftsmanship to deliver lasting products for mobile and beyond."
+        "shape" to "Shape is an award winning digital product studio. We are a team of 70+ devoted in-house developers, designers and strategists that combine innovation with digital craftsmanship to deliver lasting products for mobile and beyond.",
+        "badoo" to "We're the team behind some of the world’s biggest dating brands, including Badoo, Bumble, Lumen and Chappy, and our products are used by over 500 million people worldwide.\n\nAs one of the leading tech companies in Europe, we’re constantly growing, investing and innovating to provide the best technology and user experience for our community, because we believe that happiness is better shared.\n\nOur Engineering Team is made up of over 280 Agile people, and each team releases new and improved features every week! They are fast, innovative and creative, and their work impacts hundreds of millions of people every day. To find out more, you can check out our tech blog here https://badootech.badoo.com/, and peruse our OpenSource projects here https://github.com/badoo."
     )
 
     fun partner(name: String): Partner? = partners.find { name == it.key }

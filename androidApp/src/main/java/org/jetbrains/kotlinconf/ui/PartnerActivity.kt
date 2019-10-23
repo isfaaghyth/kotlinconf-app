@@ -8,7 +8,7 @@ import android.net.Uri
 import org.jetbrains.kotlinconf.R
 import org.jetbrains.kotlinconf.*
 
-val PARTNER_LOGOS = mapOf(
+internal val PARTNER_LOGOS = mapOf(
     "android" to R.drawable.logo_android_big,
     "47" to R.drawable.logo_47_big,
     "freenow" to R.drawable.logo_freenow_big,
@@ -16,7 +16,8 @@ val PARTNER_LOGOS = mapOf(
     "instill" to R.drawable.logo_instl_big,
     "gradle" to R.drawable.logo_gradle_big,
     "n26" to R.drawable.logo_n26_big,
-    "kodein" to R.drawable.logo_kodein_big
+    "kodein" to R.drawable.logo_kodein_big,
+    "badoo" to R.drawable.logo_badoo
 )
 
 class PartnerActivity : AppCompatActivity() {

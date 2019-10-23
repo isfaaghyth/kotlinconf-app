@@ -1,37 +1,36 @@
 package org.jetbrains.kotlinconf.ui
 
+import android.content.*
+import android.net.*
 import android.os.*
+import android.text.*
 import android.view.*
 import androidx.core.view.*
 import androidx.fragment.app.*
 import androidx.navigation.*
 import androidx.recyclerview.widget.*
-import com.bumptech.glide.*
-import com.google.android.youtube.player.*
-import io.ktor.util.date.*
 import io.ktor.utils.io.core.*
-import kotlinx.android.synthetic.main.fragment_before.view.*
+import kotlinx.android.synthetic.main.fragment_after.view.*
+import kotlinx.android.synthetic.main.fragment_before.*
 import kotlinx.android.synthetic.main.fragment_home.*
 import kotlinx.android.synthetic.main.fragment_home.view.*
-import kotlinx.android.synthetic.main.view_dont_miss_card.view.*
 import kotlinx.android.synthetic.main.view_session_live_card.view.*
-import kotlinx.android.synthetic.main.view_tweet_card.view.*
-import kotlinx.coroutines.*
 import org.jetbrains.kotlinconf.*
 import org.jetbrains.kotlinconf.BuildConfig.*
 import org.jetbrains.kotlinconf.R
 import org.jetbrains.kotlinconf.presentation.*
-import kotlin.time.*
+import org.jetbrains.kotlinconf.ui.details.*
+import kotlin.math.*
 
 class HomeController : Fragment() {
     private val liveCards by lazy { LiveCardsAdapter() }
     private val reminders by lazy { RemaindersAdapter() }
     private val feed by lazy { FeedAdapter() }
 
+    private lateinit var homeWatcher: Closeable
     private lateinit var liveWatcher: Closeable
     private lateinit var remindersWatcher: Closeable
     private lateinit var feedWatcher: Closeable
-    private var timer: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,6 +57,21 @@ class HomeController : Fragment() {
             feed.data = it.statuses
             feed.notifyDataSetChanged()
         }
+
+        var lastState: HomeState = KotlinConf.service.currentHomeState()
+        homeWatcher = KotlinConf.service.homeState.watch { state ->
+            if (state != lastState) {
+                lastState = state
+                clickHome()
+                return@watch
+            }
+
+            if (state is HomeState.Before) {
+                setTimerState(state)
+            }
+
+            lastState = state
+        }
     }
 
     override fun onDestroy() {
@@ -65,36 +79,43 @@ class HomeController : Fragment() {
         liveWatcher.close()
         remindersWatcher.close()
         feedWatcher.close()
-        timer?.cancel()
+        homeWatcher.close()
     }
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val now: GMTDate = KotlinConf.service.now()
-
-        val view: View = when {
-            now < CONFERENCE_START -> inflater.inflate(
-                R.layout.fragment_before, container, false
+    ): View? = when (KotlinConf.service.currentHomeState()) {
+        is HomeState.After -> {
+            inflater.inflate(
+                R.layout.fragment_after, container, false
             ).apply {
-                setupTimer()
+                after_description_view?.apply {
+                    text = Html.fromHtml(getString(R.string.after_description))
+                    setOnClickListener {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://kotlinconf.com"))
+                        startActivity(intent)
+                    }
+                }
             }
-            now < CONFERENCE_END -> inflater.inflate(
+        }
+        is HomeState.During -> {
+            inflater.inflate(
                 R.layout.fragment_home, container, false
             ).apply {
                 setupLiveCards()
                 setupRemainders()
                 setupTwitter()
                 setupPartners()
+                setupVoteMeter()
             }
-            else -> inflater.inflate(
-                R.layout.fragment_after, container, false
+        }
+        is HomeState.Before -> {
+            inflater.inflate(
+                R.layout.fragment_before, container, false
             )
         }
-
-        return view
     }
 
     private fun View.setupLiveCards() {
@@ -106,22 +127,19 @@ class HomeController : Fragment() {
         }
     }
 
-    @UseExperimental(ExperimentalTime::class)
-    private fun View.setupTimer() {
-        lateinit var subscription: Closeable
+    private fun clickHome() {
+        activity?.findNavController(R.id.nav_host_fragment)?.apply {
+            popBackStack()
+            navigate(R.id.navigation_home)
+        }
+    }
 
-        subscription = KotlinConf.service.beforeTimer.watch { timestamp ->
-            with(timestamp) {
-                if (listOf(days, hours, minutes, seconds).all { it == 0 }) {
-                    val controller = activity?.findNavController(R.id.nav_host_fragment)
-                    controller?.navigate(R.id.navigation_home)
-                    subscription.close()
-                }
-                before_days.text = days.toString()
-                before_hours.text = hours.toString()
-                before_minutes.text = minutes.toString()
-                before_seconds.text = seconds.toString()
-            }
+    private fun setTimerState(state: HomeState.Before) {
+        with(state) {
+            before_days?.text = days.toString()
+            before_hours?.text = hours.toString()
+            before_minutes?.text = minutes.toString()
+            before_seconds?.text = seconds.toString()
         }
     }
 
@@ -151,13 +169,26 @@ class HomeController : Fragment() {
             button_instill,
             button_gradle,
             button_n26,
-            button_kodein
+            button_kodein,
+            button_badoo
         ).forEach {
             it.setOnClickListener {
                 showActivity<PartnerActivity> {
                     putExtra("partner", it.tag.toString())
                 }
             }
+        }
+    }
+
+    private fun View.setupVoteMeter() {
+        KotlinConf.service.votes.watch {
+            val size = it.size
+            val progress = min(100.0, 100.0 * size / VOTES_FOR_TSHIRT).toInt()
+
+            vote_meter.progress = progress
+            val finished = if (progress == 100) View.VISIBLE else View.INVISIBLE
+            vote_done.visibility = finished
+            vote_done_description.visibility = finished
         }
     }
 
@@ -211,140 +242,6 @@ class HomeController : Fragment() {
 
         override fun onBindViewHolder(holder: TweetHolder, position: Int) {
             holder.showPost(data[position])
-        }
-    }
-}
-
-class LiveCardHolder(private val view: View) : RecyclerView.ViewHolder(view) {
-    private var favoriteSubscription: Closeable? = null
-    private var liveSubscription: Closeable? = null
-
-    fun setupCard(sessionCard: SessionCard) {
-        favoriteSubscription?.close()
-        liveSubscription?.close()
-
-        with(view) {
-            setOnTouchListener { view, event ->
-                val action = event.action
-
-                view.live_card.setPressedColor(
-                    event,
-                    R.color.dark_grey_card,
-                    R.color.dark_grey_card_pressed
-                )
-                if (action == MotionEvent.ACTION_UP) {
-                    showActivity<SessionActivity> {
-                        putExtra("session", sessionCard.session.id)
-                    }
-                }
-
-                true
-            }
-
-            liveSubscription = sessionCard.isLive.watch {
-                live_video_view.tag = it
-            }
-            live_session_title.text = sessionCard.session.displayTitle
-            live_session_speakers.text = sessionCard.speakers.joinToString { it.fullName }
-            live_location.text = sessionCard.location.displayName()
-            live_favorite.setOnClickListener {
-                KotlinConf.service.markFavorite(sessionCard.session.id)
-            }
-
-            live_time.text = "${KotlinConf.service.minutesLeft(sessionCard)} minutes left"
-
-            favoriteSubscription = sessionCard.isFavorite.watch {
-                val image = if (it) {
-                    R.drawable.favorite_orange
-                } else {
-                    R.drawable.favorite_white_empty
-                }
-
-                live_favorite.setImageResource(image)
-            }
-        }
-    }
-
-    companion object ThumbnailListener : YouTubeThumbnailView.OnInitializedListener {
-        override fun onInitializationFailure(
-            view: YouTubeThumbnailView,
-            loader: YouTubeInitializationResult
-        ) {
-        }
-
-        override fun onInitializationSuccess(
-            view: YouTubeThumbnailView,
-            loader: YouTubeThumbnailLoader
-        ) {
-            val tag = view.tag as? String ?: return
-            loader.setVideo(tag)
-        }
-    }
-}
-
-class RemainderHolder(private val view: View) : RecyclerView.ViewHolder(view) {
-    private var favoriteSubscription: Closeable? = null
-
-    fun setupCard(sessionCard: SessionCard) {
-        favoriteSubscription?.close()
-
-        with(view) {
-            setOnTouchListener { view, event ->
-                view.speaker_card_remainder.setPressedColor(
-                    event,
-                    R.color.dark_grey_card,
-                    R.color.dark_grey_card_pressed
-                )
-
-                if (event.action == MotionEvent.ACTION_UP) {
-                    showActivity<SessionActivity> {
-                        putExtra("session", sessionCard.session.id)
-                    }
-                }
-                true
-            }
-
-            card_session_title.text = sessionCard.session.displayTitle
-            card_session_speakers.text = sessionCard.speakers.joinToString { it.fullName }
-            card_location_label.text = sessionCard.location.displayName()
-
-            card_live_label.isVisible = false
-            card_live_icon.isVisible = false
-
-            card_favorite_button.setOnClickListener {
-                KotlinConf.service.markFavorite(sessionCard.session.id)
-            }
-
-            favoriteSubscription = sessionCard.isFavorite.watch {
-                val image = if (it) {
-                    R.drawable.favorite_orange
-                } else {
-                    R.drawable.favorite_white_empty
-                }
-                card_favorite_button.setImageResource(image)
-            }
-        }
-    }
-}
-
-class TweetHolder(private val view: View) : RecyclerView.ViewHolder(view) {
-    fun showPost(post: FeedPost) {
-        with(view) {
-            Glide.with(view)
-                .load(post.user.profile_image_url_https)
-                .into(tweet_avatar)
-
-            tweet_account.text = "@${post.user.screen_name}"
-            tweet_name.text = post.user.name
-            tweet_text.text = post.text
-            tweet_time.text = post.displayDate()
-
-            val photoUrl = post.entities.media.map { it.media_url_https }.firstOrNull()
-            if (photoUrl != null) {
-                Glide.with(view)
-                    .load(photoUrl)
-                    .into(tweet_photo)
-            }
         }
     }
 }

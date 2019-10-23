@@ -18,7 +18,7 @@
             <TextView
                 android:id="@+id/live_title"
                 android:layout_width="match_parent"
-                android:layout_height="90sp"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="21dp"
                 android:layout_marginLeft="21dp"
                 android:layout_marginTop="28dp"
@@ -42,7 +42,7 @@
             <TextView
                 android:id="@+id/dont_miss_title"
                 android:layout_width="wrap_content"
-                android:layout_height="90sp"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="21dp"
                 android:layout_marginLeft="21dp"
                 android:layout_marginTop="47dp"
@@ -63,14 +63,14 @@
             <TextView
                 android:id="@+id/tweet_title"
                 android:layout_width="wrap_content"
-                android:layout_height="90sp"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="21dp"
                 android:layout_marginLeft="21dp"
                 android:layout_marginTop="105dp"
                 android:fontFamily="@font/druk_font"
                 android:text="@string/tweet_title"
                 android:textColor="@color/white"
-                android:textSize="80sp"
+                android:textSize="75sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/dont_miss_block" />
 
@@ -97,13 +97,13 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tweet_feed_list" />
 
-
             <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/partner_buttons"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:layout_constraintTop_toBottomOf="@id/partners_title"
                 android:layout_marginTop="24dp"
-                android:paddingBottom="77dp">
+                >
 
                 <LinearLayout
                     android:id="@+id/row_1"
@@ -258,7 +258,124 @@
                         android:src="@drawable/logo_n_26"
                         android:tag="n26" />
                 </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/row_5"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:weightSum="1.0"
+
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/row_4">
+
+                    <ImageButton
+                        android:id="@+id/button_badoo"
+                        android:layout_width="0dp"
+                        android:layout_height="136dp"
+                        android:layout_marginLeft="8dp"
+                        android:layout_marginRight="2dp"
+                        android:layout_weight="0.5"
+                        android:background="@color/dark_grey_card"
+                        android:elevation="1dp"
+                        android:padding="16dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/logo_badoo_small"
+                        android:tag="badoo" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="136dp"
+                        android:layout_marginLeft="2dp"
+                        android:layout_marginRight="8dp"
+                        android:layout_weight="0.5"
+                        android:elevation="1dp"
+                        android:padding="16dp"
+                        android:tag="" />
+                </LinearLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <TextView
+                android:id="@+id/vote_meter_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:textSize="70sp"
+                android:lineSpacingExtra="-6sp"
+                android:text="VOTE-O-METER"
+                android:layout_marginStart="21dp"
+                android:layout_marginLeft="21dp"
+                android:layout_marginTop="47dp"
+                android:layout_marginBottom="37dp"
+                android:fontFamily="@font/druk_font"
+                android:textColor="@color/white"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/partner_buttons" />
+
+            <ProgressBar
+                style="?android:attr/progressBarStyleHorizontal"
+                android:id="@+id/vote_meter"
+                app:layout_constraintTop_toBottomOf="@id/vote_meter_title"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="30dp"
+                android:layout_marginLeft="24dp"
+                android:layout_marginRight="65dp"
+                android:layout_marginBottom="200dp"
+                android:layout_width="0dp"
+                android:layout_height="4dp"
+                android:background="@color/dark_grey_40"
+                android:backgroundTint="@color/red_orange"
+                android:progress="0"
+            />
+
+            <ImageView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_constraintLeft_toRightOf="@id/vote_meter"
+                app:layout_constraintTop_toBottomOf="@id/vote_meter_title"
+                app:layout_constraintRight_toRightOf="parent"
+                android:layout_marginRight="22dp"
+                android:layout_marginLeft="15dp"
+                android:layout_marginTop="20dp"
+                android:src="@drawable/meter_icon"
+            />
+
+            <TextView
+                android:id="@+id/vote_done"
+                app:layout_constraintTop_toBottomOf="@id/vote_meter"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="37dp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="24dp"
+                android:layout_marginRight="24dp"
+                android:textSize="15sp"
+                android:textColor="#ffffff"
+                android:lineSpacingExtra="9sp"
+                android:text="Done!"
+                android:textStyle="bold"
+                android:visibility="invisible"
+            />
+
+            <TextView
+                android:id="@+id/vote_done_description"
+                app:layout_constraintTop_toBottomOf="@id/vote_done"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="7dp"
+                android:layout_marginLeft="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:textColor="#99ffffff"
+                android:lineSpacingExtra="9sp"
+                android:text="Go and get you t-shirt on registration desk"
+                android:visibility="invisible"
+
+            />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>

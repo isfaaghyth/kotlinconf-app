@@ -18,7 +18,7 @@ import kotlin.time.*
  * [ConferenceService] handles data and builds model.
  */
 @ThreadLocal
-@UseExperimental(ExperimentalTime::class)
+@UseExperimental(ExperimentalTime::class, ExperimentalCoroutinesApi::class)
 class ConferenceService(val context: ApplicationContext) : CoroutineScope {
     private val exceptionHandler = object : CoroutineExceptionHandler {
         override val key: CoroutineContext.Key<*> = CoroutineExceptionHandler
@@ -29,13 +29,14 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
     }
 
     private val _errors = ConflatedBroadcastChannel<Throwable>()
-    val errors = _errors.asFlow().wrap()
+    val errors = _errors.wrap()
 
     override val coroutineContext: CoroutineContext = dispatcher() + SupervisorJob() + exceptionHandler
 
     private val storage: ApplicationStorage = ApplicationStorage(context)
     private var userId: String? by storage(NullableSerializer(String.serializer())) { null }
     private var firstLaunch: Boolean by storage(Boolean.serializer()) { true }
+    private var notificationsAllowed: Boolean by storage(Boolean.serializer()) { false }
     private var locationAllowed: Boolean by storage(Boolean.serializer()) { false }
 
     private var serverTime = GMTDate()
@@ -59,13 +60,13 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
      * Public conference information.
      */
     private val _publicData by storage.live { SessionizeData() }
-    val publicData = _publicData.asFlow().wrap()
+    val publicData = _publicData.wrap()
 
     /**
      * Favorites list.
      */
     private val _favorites by storage.live { mutableSetOf<String>() }
-    val favorites = _favorites.asFlow().wrap()
+    val favorites = _favorites.wrap()
 
     private val _votes by storage.live { mutableMapOf<String, RatingData>() }
     private val _feed = ConflatedBroadcastChannel<FeedData>(FeedData())
@@ -73,15 +74,15 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
     /**
      * Votes list.
      */
-    val votes = _votes.asFlow().wrap()
+    val votes = _votes.wrap()
 
     /**
      * Twitter feed.
      */
-    val feed = _feed.asFlow().wrap()
+    val feed = _feed.wrap()
 
     private var _videos = ConflatedBroadcastChannel<List<LiveVideo>>(emptyList())
-    private var videos = _videos.asFlow().wrap()
+    private var videos = _videos.wrap()
 
     /**
      * Live sessions.
@@ -90,7 +91,7 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
     private val _upcomingFavorites = ConflatedBroadcastChannel<Set<String>>(mutableSetOf())
 
     @UseExperimental(ExperimentalTime::class)
-    private val _beforeTimer = ConflatedBroadcastChannel<Timestamp>()
+    private val _homeState = ConflatedBroadcastChannel<HomeState>(HomeState.During)
 
     val liveSessions = _liveSessions.asFlow().map {
         it.toList().map { id -> sessionCard(id) }
@@ -117,11 +118,11 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
 
     val sessions = publicData.map {
         it.sessions
-            .filter { !it.isPlenumSession && !it.isServiceSession }
-            .sortedBy { it.title }.map { sessionCard(it.id) }
+            .filter { !it.isServiceSession }
+            .sortedBy { it.startsAt.timestamp }.map { sessionCard(it.id) }
     }.wrap()
 
-    val beforeTimer = _beforeTimer.asFlow().wrap()
+    val homeState = _homeState.wrap()
 
     init {
         launch {
@@ -131,19 +132,40 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
 
         launch {
             while (true) {
-                scheduledUpdate()
+                try {
+                    scheduledUpdate()
+                } catch (cause: Throwable) {
+                    _errors.offer(cause)
+                }
                 delay(60 * 1000)
             }
         }
 
         launch {
+            var lastState: HomeState? = null
             while (true) {
-                val now = now()
-                val diff = max(0, (CONFERENCE_START.timestamp - now.timestamp) / 1000)
+                try {
+                    val now = now()
+                    val state = when {
+                        now < CONFERENCE_START -> {
+                            val diff = max(0, (CONFERENCE_START.timestamp - now.timestamp) / 1000)
+                            val remaining = diff.toDuration(DurationUnit.SECONDS)
 
-                val remaining = diff.toDuration(DurationUnit.SECONDS)
-                remaining.toComponents { days, hours, minutes, seconds, _ ->
-                    _beforeTimer.offer(Timestamp(days, hours, minutes, seconds))
+                            HomeState.Before(remaining)
+                        }
+                        now > CONFERENCE_END -> HomeState.After
+                        else -> HomeState.During
+                    }
+
+                    if (lastState != state && state == HomeState.During) {
+                        updateUpcoming()
+                        updateLive()
+                    }
+
+                    _homeState.offer(state)
+                    lastState = state
+                } catch (cause: Throwable) {
+                    _errors.offer(cause)
                 }
 
                 delay(1000)
@@ -169,24 +191,18 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
         return result
     }
 
+    /**
+     * Check if the user clicked allow in our and system dialogs.
+     */
     fun isLocationEnabled(): Boolean {
         return locationAllowed && locationManager.isEnabled()
     }
 
     /**
-     * Check if session is favorite.
+     * Return current state for home screen.
      */
-    fun sessionIsFavorite(sessionId: String): Boolean = sessionId in _favorites.value
+    fun currentHomeState(): HomeState = _homeState.value
 
-    /**
-     * Get session rating.
-     */
-    fun sessionRating(sessionId: String): RatingData? = _votes.value[sessionId]
-
-    /**
-     * Get talk sessions.
-     */
-    fun talks(): List<SessionData> = _publicData.value.sessions.filter { !it.isServiceSession && !it.isPlenumSession }
 
     /**
      * Get speakers from session.
@@ -209,16 +225,17 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
      */
     fun roomSessions(roomId: Int): List<SessionCard> = talks().filter { it.roomId == roomId }
         .map { sessionCard(it.id) }
+        .sortedBy { it.session.startsAt }
 
     /**
      * Find room by location label.
      */
     fun roomByMapName(namesInArea: List<String>): RoomData? {
-        val matching = mapOf<String, Int>(
+        val matching = mapOf(
             "keynote hot spot" to 7972,
             "aud. 15 hot spot" to 7975,
             "aud. 12 hot spot" to 7974,
-            "aud. 11 hot spot" to 7972,
+            "aud. 11 hot spot" to 7973,
             "party area hot spot" to 0,
             "registration hot spot" to 0,
             "aud. 16 hot spot" to 0,
@@ -266,8 +283,8 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
         val isLive = _liveSessions.asFlow().map {
             if (id !in it) return@map null
             val videos = _videos.value
-            videos.find { it.room == location.id }?.videoId ?: ""
-        }.wrap()
+            videos.find { it.room == location.id }?.videoId
+        }.distinctUntilChanged().wrap()
 
         val result = SessionCard(
             session,
@@ -282,13 +299,6 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
 
         cards[id] = result
         return result
-    }
-
-    /**
-     * Get current time synchronized with server.
-     */
-    fun now(): GMTDate {
-        return GMTDate() + (serverTime.timestamp - requestTime.timestamp)
     }
 
     /**
@@ -323,11 +333,8 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
      * Request permissions to send notifications.
      */
     fun requestNotificationPermissions() {
-        launch {
-            if (!notificationManager.isEnabled()) {
-                notificationManager.requestPermission()
-            }
-        }
+        notificationsAllowed = true
+        notificationManager.requestPermission()
     }
 
     /**
@@ -344,7 +351,6 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
     fun vote(sessionId: String, rating: RatingData) {
         launch {
             val userId = userId ?: throw Unauthorized()
-
             val votes = _votes.value
             val oldRating = votes[sessionId]
             val newRating = if (rating == oldRating) null else rating
@@ -372,26 +378,43 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
     fun markFavorite(sessionId: String) {
         launch {
             val userId = userId ?: throw Unauthorized()
-
-            val newValue = !(sessionId in _favorites.value)
+            val newValue = sessionId !in _favorites.value
 
             try {
                 updateFavorite(sessionId, newValue)
                 if (newValue) {
                     ClientApi.postFavorite(userId, sessionId)
-                    if (notificationManager.isEnabled()) {
-                        notificationManager.schedule(session(sessionId))
-                    }
+                    scheduleNotification(session(sessionId))
                 } else {
                     ClientApi.deleteFavorite(userId, sessionId)
-                    if (notificationManager.isEnabled()) {
-                        notificationManager.cancel(session(sessionId))
-                    }
+                    cancelNotification(session(sessionId))
                 }
             } catch (cause: Throwable) {
                 updateFavorite(sessionId, !newValue)
             }
         }
+    }
+
+    private fun scheduleNotification(session: SessionData) {
+        if (!notificationsAllowed) {
+            return
+        }
+
+        val startTimestamp = session.startsAt.timestamp - 15 * 60 * 1000
+        val delay = startTimestamp - now().timestamp
+        if (delay < 0) {
+            return
+        }
+
+        notificationManager.schedule(delay, session.title, "Starts in 15 minutes.")
+    }
+
+    private fun cancelNotification(session: SessionData) {
+        if (!notificationsAllowed) {
+            return
+        }
+
+        notificationManager.cancel(session.title)
     }
 
     /**
@@ -410,7 +433,7 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
                 }
                 _votes.offer(votesMap)
 
-                scheduledUpdate()
+                updateModel()
             }
 
         }
@@ -421,6 +444,10 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
             refresh()
         }
 
+        updateModel()
+    }
+
+    private suspend fun updateModel() {
         synchronizeTime()
         updateLive()
         updateUpcoming()
@@ -439,10 +466,13 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
             return
         }
 
-        val now = serverTime + TIMEZONE_OFFSET
-
+        val now = now()
         val result = sessions
-            .filter { it.startsAt <= now && now <= it.endsAt && !it.isServiceSession }
+            .filter { now >= it.startsAt && now <= it.endsAt && !it.isServiceSession }
+            .filter {
+                val room = it.roomId ?: return@filter false
+                _videos.value.any { it.room == room }
+            }
             .map { it.id }
             .toSet()
 
@@ -459,8 +489,10 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
         val now = now()
         val today = now.dayOfYear
         val cards = favorites
+            .asSequence()
             .map { sessionCard(it) }
-            .filter { it.session.startsAt.dayOfYear == today && it.session.endsAt >= now + TIMEZONE_OFFSET }
+            .filter { it.session.startsAt.dayOfYear == today && it.session.endsAt >= now() }
+            .sortedBy { it.session.startsAt.timestamp }
             .map { it.session.id }
             .toSet()
 
@@ -497,5 +529,17 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
 
     private suspend fun updateFeed() {
         _feed.offer(ClientApi.getFeed())
+    }
+
+    /**
+     * Get talk sessions.
+     */
+    private fun talks(): List<SessionData> = _publicData.value.sessions.filter { !it.isServiceSession }
+
+    /**
+     * Get current time synchronized with server.
+     */
+    private fun now(): GMTDate {
+        return GMTDate() + (serverTime.timestamp - requestTime.timestamp)
     }
 }

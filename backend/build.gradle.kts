@@ -31,7 +31,6 @@ kotlin {
 
                 implementation("io.ktor:ktor-server-netty:$ktor_version")
                 implementation("io.ktor:ktor-auth:$ktor_version")
-                implementation("io.ktor:ktor-websockets:$ktor_version")
                 implementation("io.ktor:ktor-serialization:$ktor_version")
                 implementation("io.ktor:ktor-client-cio:$ktor_version")
 
@@ -43,7 +42,6 @@ kotlin {
                 implementation("com.zaxxer:HikariCP:$hikari_version")
 
                 implementation("ch.qos.logback:logback-classic:$logback_version")
-
             }
         }
         val jvmTest by getting {
@@ -52,7 +50,6 @@ kotlin {
                 implementation("org.jetbrains.kotlin:kotlin-test:$kotlin_version")
                 implementation("junit:junit:$junit_version")
             }
-
         }
     }
 }

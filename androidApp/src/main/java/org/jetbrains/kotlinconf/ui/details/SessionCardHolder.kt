@@ -15,7 +15,10 @@ import org.jetbrains.kotlinconf.*
 import org.jetbrains.kotlinconf.presentation.*
 import org.jetbrains.kotlinconf.ui.*
 
-internal class SessionCardHolder(private val view: View) : RecyclerView.ViewHolder(view) {
+internal class SessionCardHolder(
+    private val view: View,
+    private val displayTime: Boolean = false
+) : RecyclerView.ViewHolder(view) {
     private var liveWatcher: Closeable? = null
     private var favoriteWatcher: Closeable? = null
     private var ratingWatcher: Closeable? = null
@@ -37,12 +40,18 @@ internal class SessionCardHolder(private val view: View) : RecyclerView.ViewHold
 
             card_session_title.text = card.session.displayTitle
             card_session_speakers.text = card.speakers.joinToString { it.fullName }
-            card_location_label.text = card.location.displayName()
-            card_live_label.text = "Live now"
+            if (displayTime) {
+                card_location_arrow.visibility = View.INVISIBLE
+                card_location_label.text = card.displayTime()
+                card_live_label.isVisible = false
+            } else {
+                card_location_arrow.visibility = View.VISIBLE
+                card_location_label.text = card.location.displayName()
+            }
 
             liveWatcher = card.isLive.watch {
                 card_live_icon.isVisible = it != null
-                card_live_label.isVisible = it != null
+                card_live_label.isVisible = it != null && !displayTime
             }
 
             favoriteWatcher = card.isFavorite.watch {

@@ -2,15 +2,12 @@ package org.jetbrains.kotlinconf.backend
 
 import io.ktor.application.*
 import io.ktor.auth.*
-import io.ktor.content.TextContent
 import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.util.date.*
-import io.ktor.util.date.Month
-import io.ktor.util.pipeline.*
 import org.jetbrains.kotlinconf.*
 import java.time.*
 import java.time.format.*
@@ -18,30 +15,19 @@ import java.util.*
 
 private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
 
-internal fun Routing.api(database: Database, production: Boolean, sessionizeUrl: String) {
-    apiKeynote(production)
+internal fun Routing.api(
+    database: Database,
+    sessionizeUrl: String,
+    adminSecret: String
+) {
     apiUsers(database)
     apiAll(database)
-    apiSession()
-    apiVote(database, production)
-    apiFavorite(database, production)
-    apiSynchronize(sessionizeUrl)
+    apiVote(database, adminSecret)
+    apiFavorite(database)
+    apiSynchronize(sessionizeUrl, adminSecret)
     apiTwitter()
-    apiTime()
-}
-
-/*
-GET http://localhost:8080/keynote?datetimeoverride=2017-10-24T10:00-07:00
- */
-private fun Routing.apiKeynote(production: Boolean) {
-    get("keynote") {
-        val nowTime = simulatedTime(production)
-        if (nowTime.isAfter(keynoteEndDateTime))
-            call.respond(HttpStatusCode.OK)
-        else {
-            call.respond(comeBackLater)
-        }
-    }
+    apiTime(adminSecret)
+    apiLive(adminSecret)
 }
 
 /*
@@ -71,18 +57,12 @@ GET http://localhost:8080/favorites
 Accept: application/json
 Authorization: Bearer 1238476512873162837
 */
-private fun Routing.apiFavorite(database: Database, production: Boolean) {
+private fun Routing.apiFavorite(database: Database) {
     route("favorites") {
         get {
             val principal = call.validatePrincipal(database) ?: throw Unauthorized()
             val favorites = database.getFavorites(principal.token)
             call.respond(favorites)
-        }
-        if (!production) {
-            get("all") {
-                val favorites = database.getAllFavorites()
-                call.respond(favorites)
-            }
         }
         post {
             val principal = call.validatePrincipal(database) ?: throw Unauthorized()
@@ -104,7 +84,10 @@ GET http://localhost:8080/votes
 Accept: application/json
 Authorization: Bearer 1238476512873162837
 */
-private fun Routing.apiVote(database: Database, production: Boolean) {
+private fun Routing.apiVote(
+    database: Database,
+    adminSecret: String
+) {
     route("votes") {
         get {
             val principal = call.validatePrincipal(database) ?: throw Unauthorized()
@@ -112,10 +95,14 @@ private fun Routing.apiVote(database: Database, production: Boolean) {
             call.respond(votes)
         }
         get("all") {
+            call.validateSecret(adminSecret)
+
             val votes = database.getAllVotes()
             call.respond(votes)
         }
         get("summary/{sessionId}") {
+            call.validateSecret(adminSecret)
+
             val id = call.parameters["sessionId"] ?: throw BadRequest()
             val votesSummary = database.getVotesSummary(id)
             call.respond(votesSummary)
@@ -127,21 +114,13 @@ private fun Routing.apiVote(database: Database, production: Boolean) {
             val rating = vote.rating!!.value
 
             val session = getSessionizeData().sessions.firstOrNull { it.id == sessionId } ?: throw NotFound()
-            val nowTime = simulatedTime(production)
+            val nowTime = now()
 
-            fun GMTDate.toLocalTime(): LocalDateTime = LocalDateTime.ofInstant(toJvmDate().toInstant(), keynoteTimeZone)
-
-            val startVotesAt = session.startsAt.toLocalTime()
-            val endVotesAt = session.endsAt.toLocalTime().plusMinutes(15)!!
-            val votingPeriodStarted = startVotesAt.let { ZonedDateTime.of(it, keynoteTimeZone).isBefore(nowTime) }
-            val votingPeriodEnded = endVotesAt.let { ZonedDateTime.of(it, keynoteTimeZone).isBefore(nowTime) }
+            val startVotesAt = session.startsAt
+            val votingPeriodStarted = nowTime >= startVotesAt
 
             if (!votingPeriodStarted) {
                 return@post call.respond(comeBackLater)
-            }
-
-            if (votingPeriodEnded) {
-                return@post call.respond(tooLate)
             }
 
             val timestamp = LocalDateTime.now(Clock.systemUTC())
@@ -175,51 +154,69 @@ private fun Routing.apiAll(database: Database) {
         val responseData = if (principal != null) {
             val votes = database.getVotes(principal.token)
             val favorites = database.getFavorites(principal.token)
-            ConferenceData(data, favorites, votes, LIVE_INFO)
-        } else ConferenceData(data, liveVideos = LIVE_INFO)
+            ConferenceData(data, favorites, votes, liveInfo())
+        } else {
+            ConferenceData(data, liveVideos = liveInfo())
+        }
 
         call.respond(responseData)
     }
 }
 
-private fun Routing.apiSession() {
-    route("sessions") {
-        get {
-            val data = getSessionizeData()
-            call.respond(data.sessions)
-        }
-        get("{sessionId}") {
-            val data = getSessionizeData()
-            val id = call.parameters["sessionId"] ?: throw BadRequest()
-            val session = data.sessions.singleOrNull { it.id == id } ?: throw NotFound()
-            call.respond(session)
-        }
-    }
-}
-
 private fun Routing.apiTwitter() {
     get("feed") {
-//        call.respond(TextContent("{}", contentType = ContentType.Application.Json))
         call.respond(getFeedData())
     }
 }
 
-private fun Routing.apiTime() {
+private fun Routing.apiTime(adminSecret: String) {
     get("time") {
-        val timestamp = GMTDate(
-            0, 1, 8, 5, Month.DECEMBER, 2019
-        )
-        call.respond(timestamp.timestamp.toString())
+        call.respond(now().timestamp)
+    }
+    post("time/{timestamp}") {
+        call.validateSecret(adminSecret)
+
+        val timestamp = call.parameters["timestamp"] ?: error("No time")
+        val time = if (timestamp == "null") {
+            null
+        } else {
+            GMTDate(timestamp.toLong())
+        }
+
+        updateTime(time)
+        call.respond(HttpStatusCode.OK)
+    }
+}
+
+private fun Routing.apiLive(adminSecret: String) {
+    post("live") {
+        call.validateSecret(adminSecret)
+
+        val form = call.receiveParameters()
+        val room = form["roomId"]?.toIntOrNull() ?: throw BadRequest()
+        val video = form["video"]
+
+        addLive(room, video)
+        call.respond(HttpStatusCode.OK)
     }
 }
 
 /*
 GET http://localhost:8080/sessionizeSync
 */
-private fun Routing.apiSynchronize(sessionizeUrl: String) {
-    get("sessionizeSync") {
+private fun Routing.apiSynchronize(sessionizeUrl: String, adminSecret: String) {
+    post("sessionizeSync") {
+        call.validateSecret(adminSecret)
+
         synchronizeWithSessionize(sessionizeUrl)
         call.respond(HttpStatusCode.OK)
+    }
+}
+
+private fun ApplicationCall.validateSecret(adminSecret: String) {
+    val principal = principal<KotlinConfPrincipal>()
+    if (principal?.token != adminSecret) {
+        throw Unauthorized()
     }
 }
 
@@ -229,10 +226,3 @@ private suspend fun ApplicationCall.validatePrincipal(database: Database): Kotli
     return principal
 }
 
-private fun PipelineContext<Unit, ApplicationCall>.simulatedTime(production: Boolean): ZonedDateTime {
-    val now = ZonedDateTime.now(keynoteTimeZone)
-    return if (production)
-        now
-    else
-        call.parameters["datetimeoverride"]?.let { ZonedDateTime.parse(it) } ?: now
-}

@@ -173,7 +173,8 @@ class MapController : Fragment() {
                         R.layout.view_schedule_session_card,
                         parent,
                         false
-                    )
+                    ),
+                    displayTime = true
                 )
 
                 override fun getItemCount(): Int = cards.size

@@ -12,35 +12,21 @@ import kotlin.native.concurrent.*
 actual class NotificationManager actual constructor(context: ApplicationContext) {
     private val center = UNUserNotificationCenter.currentNotificationCenter()
 
-    actual suspend fun isEnabled(): Boolean = true
-
-    actual suspend fun requestPermission(): Boolean = suspendCancellableCoroutine {
-        center.requestAuthorizationWithOptions(UNAuthorizationOptionAlert) { allowed, error ->
-            if (error != null) {
-                it.resumeWithException(error.asException())
-            } else {
-                it.resume(allowed)
-            }
+    actual fun requestPermission() {
+        val block = object : (Boolean, NSError?) -> Unit {
+            override fun invoke(p1: Boolean, p2: NSError?) {}
         }
+
+        center.requestAuthorizationWithOptions(UNAuthorizationOptionAlert, block.freeze())
     }
 
-    actual suspend fun schedule(
-        sessionData: SessionData
-    ): String? {
-        val title = sessionData.title
-        val delay = (sessionData.startsAt.timestamp - GMTDate().timestamp) / 1000.0
-        if (delay <= 0) {
-            return null
-        }
-
-        val body = "Starts in 15 minutes"
-
+    actual fun schedule(delay: Long, title: String, message: String): String? {
         val content = UNMutableNotificationContent().apply {
             setTitle(title)
-            setBody(body)
+            setBody(message)
         }
 
-        val date = NSDate.dateWithTimeIntervalSinceNow(delay)
+        val date = NSDate.dateWithTimeIntervalSinceNow(delay / 1000.0)
 
         val componentsSet =
             (NSCalendarUnitYear or NSCalendarUnitMonth or NSCalendarUnitDay or NSCalendarUnitHour or NSCalendarUnitMinute or NSCalendarUnitSecond)
@@ -60,8 +46,8 @@ actual class NotificationManager actual constructor(context: ApplicationContext)
         return title
     }
 
-    actual fun cancel(sessionData: SessionData) {
-        center.removePendingNotificationRequestsWithIdentifiers(listOf(sessionData.title))
+    actual fun cancel(title: String) {
+        center.removePendingNotificationRequestsWithIdentifiers(listOf(title))
     }
 }
 

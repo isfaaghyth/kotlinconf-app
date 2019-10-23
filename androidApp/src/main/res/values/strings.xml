@@ -10,9 +10,10 @@
     <string name="don_t_miss">DON\'T MISS</string>
     <string name="tweet_title">#KOTLINCONF</string>
     <string name="partners_title">PARTNERS</string>
-    <string name="privacy_description"><![CDATA[ To get the full benefit out of this app we need to agree to our <font color="#FF0000">privacy policy</font>.
+    <string name="privacy_description"><![CDATA[ To get the full benefit out of this app we need to agree to our <font color="#FF3F00">privacy policy</font>.
         This states that you are ok with us accessing your device id to track your votes and to store your favorites.
         Nothing more though.
         ]]>
     </string>
+    <string name="after_description"><![CDATA[Jump to <font color="#FF3F00">our site</font> for more videos and photos.]]></string>
 </resources>

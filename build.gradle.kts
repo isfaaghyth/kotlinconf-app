@@ -15,6 +15,7 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
         classpath("com.android.tools.build:gradle:$gradle_android_version")
         classpath("com.github.jengelman.gradle.plugins:shadow:$shadow_version")
+        classpath("com.google.gms:google-services:4.3.2")
     }
 }
 

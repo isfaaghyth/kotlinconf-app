@@ -38,8 +38,8 @@
 
         <ImageView
             android:id="@+id/privacy_logo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
             app:srcCompat="@drawable/privacy_logo"
             app:layout_constraintTop_toBottomOf="@id/textView"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -51,7 +51,7 @@
 
         <TextView
             android:id="@+id/privacy_policy_text"
-            android:layout_width="361dp"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginLeft="28dp"
             android:layout_marginTop="25dp"

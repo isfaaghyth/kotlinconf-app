@@ -3,6 +3,7 @@ package org.jetbrains.kotlinconf.backend
 import io.ktor.application.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import io.ktor.util.date.*
 import kotlinx.coroutines.*
 import org.jetbrains.kotlinconf.*
 import java.time.*
@@ -14,12 +15,6 @@ private var sessionizeData: SessionizeData? = null
 val comeBackLater = HttpStatusCode(477, "Come Back Later")
 val tooLate = HttpStatusCode(478, "Too Late")
 val keynoteTimeZone = ZoneId.of("Europe/Copenhagen")!!
-val keynoteEndDateTime = ZonedDateTime.of(
-    2019, 12, 5, 10, 0, 0, 0, keynoteTimeZone
-)!!
-
-const val fakeSessionId = "007"
-
 fun Application.launchSyncJob(sessionizeUrl: String, sessionizeInterval: Long) {
     log.info("Synchronizing each $sessionizeInterval minutes with $sessionizeUrl")
     GlobalScope.launch {

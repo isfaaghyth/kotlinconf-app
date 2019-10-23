@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import KotlinConfAPI
 
-class HomeController : UIViewController, UICollectionViewDataSource, UIGestureRecognizerDelegate {
+class HomeController : UIViewController, UICollectionViewDataSource, UIGestureRecognizerDelegate, UICollectionViewDelegateFlowLayout {
     @IBOutlet weak var videosView: UICollectionView!
     @IBOutlet weak var feedView: UICollectionView!
     @IBOutlet weak var upcomingFavorites: UIStackView!
@@ -13,6 +13,10 @@ class HomeController : UIViewController, UICollectionViewDataSource, UIGestureRe
     @IBOutlet weak var videosHider: NSLayoutConstraint!
     @IBOutlet weak var dontMissHider: NSLayoutConstraint!
     @IBOutlet weak var cardsHider: NSLayoutConstraint!
+
+    @IBOutlet weak var progressView: UIProgressView!
+    @IBOutlet weak var progressDone: UILabel!
+    @IBOutlet weak var progressDoneDescription: UILabel!
 
     private var liveSessions: [SessionCard] = []
     private var feedData: [FeedPost] = []
@@ -42,6 +46,19 @@ class HomeController : UIViewController, UICollectionViewDataSource, UIGestureRe
         Conference.feed.watch { feed in
             self.onFeedData(feed: feed)
         }
+
+        Conference.votes.watch { votes in
+            let count = Float(votes?.count ?? 0)
+            let progress = min(1.0, count / Float(TimeKt.VOTES_FOR_TSHIRT))
+
+            let hidden = progress != 1.0
+
+
+            self.progressDone.isHidden = hidden
+            self.progressDoneDescription.isHidden = hidden
+            self.progressView.progress = progress
+        }
+
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -152,6 +169,14 @@ class HomeController : UIViewController, UICollectionViewDataSource, UIGestureRe
         }
     }
 
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        let smallScreen = UIScreen.main.bounds.width < 375
+        let width = smallScreen ? 300 : 340
+        let height = collectionView == videosView ? 260 : 440
+
+        return CGSize(width: width, height: height)
+    }
+
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         switch collectionView {
         case videosView:
@@ -159,6 +184,12 @@ class HomeController : UIViewController, UICollectionViewDataSource, UIGestureRe
             showScreen(name: "Session") { controller in
                 (controller as! SessionController).card = card
             }
+        case feedView:
+            let item = feedData[indexPath.row]
+            let userId = item.user.id_str
+            let statusId = item.id_str
+            let url = URL(string: "https://twitter.com/\(userId)/status/\(statusId)")
+            UIApplication.shared.open(url!)
         default:
             return
         }

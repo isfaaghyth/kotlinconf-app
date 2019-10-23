@@ -36,7 +36,7 @@ android {
         minSdkVersion(16)
         targetSdkVersion(28)
         multiDexEnabled = true
-        versionCode = 12
+        versionCode = 14
         versionName = "2.0.0"
         testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
 
@@ -55,9 +55,6 @@ android {
     packagingOptions {
         exclude("META-INF/*.kotlin_module")
     }
-//    kotlinOptions {
-//        jvmTarget = "1.8"
-//    }
 }
 
 kotlin {
@@ -91,8 +88,11 @@ kotlin {
                 implementation("io.ktor:ktor-client-android:$ktor_version")
 
                 implementation("com.github.bumptech.glide:glide:$glide_version")
+                implementation("com.google.firebase:firebase-analytics:17.2.0")
+
             }
         }
     }
 }
 
+apply(plugin = "com.google.gms.google-services")

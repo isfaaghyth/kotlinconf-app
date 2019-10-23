@@ -23,7 +23,6 @@ class ScheduleController : Fragment() {
     private var lastAdapter: RecyclerView.Adapter<*>? = null
 
     private lateinit var listView: RecyclerView
-    private var scrollPosition = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,6 +78,16 @@ class ScheduleController : Fragment() {
         }
 
         search_box.apply {
+            setOnKeyListener { view, keyCode, event ->
+                if (keyCode == KeyEvent.KEYCODE_ENTER) {
+                    val inputManager = context
+                        .getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+
+                    inputManager.hideSoftInputFromWindow(this@setupSearch.windowToken, 0)
+                }
+
+                false
+            }
             addTextChangedListener {
                 search.query = it!!.toString()
                 search.notifyDataSetChanged()

@@ -29,7 +29,7 @@ extension UIViewController {
             errorMessage = "You cannot rate the session before it starts"
         case is TooLateVote:
             title = "Not Allowed"
-            errorMessage = "Rating is only permitted up to 15 minutes after the session end"
+            errorMessage = "Rating is only permitted up to 2 hours after the session end"
         default:
             return
 //            errorMessage = "Unknown Error"

@@ -22,10 +22,10 @@ class LiveVideo : UICollectionViewCell {
                 speaker.fullName
             }.joined(separator: ", ")
 
-            location.text = card.location.name
+            location.text = card.location.displayName()
 
             card.isLive.watch { videoId in
-                if (videoId != nil) {
+                if (videoId != nil && self.video.playerState() != .playing) {
                     self.video.load(withVideoId: String(videoId!))
                 }
             }

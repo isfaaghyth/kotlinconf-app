@@ -35,6 +35,7 @@ class SessionCardView : UIView, Baloon {
 
     var onTouch: () -> Void = {}
 
+    var displayTime = false
     var card: SessionCard! {
         didSet {
             if (liveObservable != nil) {
@@ -44,7 +45,6 @@ class SessionCardView : UIView, Baloon {
             }
 
             title.text = card.session.displayTitle
-            location.text = card.location.displayName()
 
             speakers.text = card.speakers.map { speaker in
                 speaker.fullName
@@ -64,6 +64,13 @@ class SessionCardView : UIView, Baloon {
             }
 
             voteBar.isHidden = true
+
+            if (displayTime) {
+                locationArrow.isHidden = true
+                location.text = card.displayTime()
+            } else {
+                location.text = card.location.displayName()
+            }
         }
     }
 
@@ -104,6 +111,13 @@ class SessionCardView : UIView, Baloon {
     private func setLive(live: Bool) {
         liveIcon.isHidden = !live
         liveLabel.isHidden = !live
+
+        liveLabel.text = "Live now"
+
+        if (displayTime) {
+            location.text = live ? "" : "    \(card.displayTime())"
+            location.isHidden = live
+        }
     }
 
     private func setFavorite(favorite: Bool) {

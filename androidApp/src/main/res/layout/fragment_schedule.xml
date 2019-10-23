@@ -17,11 +17,13 @@
 
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/schedule_tabs"
-            android:layout_width="335dp"
+            android:layout_width="0dp"
             android:layout_height="48dp"
             android:textSize="15sp"
+            android:layout_marginRight="15dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/search_button"
             app:tabIndicatorFullWidth="false"
             app:tabSelectedTextColor="@color/red_orange">
 

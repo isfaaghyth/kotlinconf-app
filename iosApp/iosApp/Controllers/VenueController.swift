@@ -22,10 +22,12 @@ class VenueController : UIViewController, MGLMapViewDelegate, BaloonContainer, U
     @IBOutlet weak var groundFloor: TopButton!
     @IBOutlet weak var firstFloor: TopButton!
     @IBOutlet weak var distance: NSLayoutConstraint!
+    @IBOutlet weak var closeButton: UIButton!
 
     private var initial: CGFloat = 44.0
     private var floor: Floor = .ground
     private var descriptionActive: Bool = false
+    @IBOutlet weak var locateButton: UIButton!
 
     private let mapPhotos = [
         7972: "keynote",
@@ -63,6 +65,10 @@ class VenueController : UIViewController, MGLMapViewDelegate, BaloonContainer, U
         if (room != nil) {
             showCard(room: room!)
         }
+
+        if (!Conference.isLocationEnabled()) {
+            locateButton.isHidden = true
+        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -93,6 +99,15 @@ class VenueController : UIViewController, MGLMapViewDelegate, BaloonContainer, U
     @IBAction func firstFloorSelect(_ sender: Any) {
         floor = .first
         showFloor()
+    }
+
+    @IBAction func locateTouch(_ sender: Any) {
+        if (mapView.userTrackingMode == .none) {
+            mapView.userTrackingMode = .follow
+        } else {
+            mapView.userTrackingMode = .none
+            mapView.resetPosition()
+        }
     }
 
     @IBAction func onClose(_ sender: Any) {
@@ -156,9 +171,6 @@ class VenueController : UIViewController, MGLMapViewDelegate, BaloonContainer, U
             showDescription()
             return
         }
-
-        showPartner(partner: ConfPartners.partnerByRoomName(name: "partner table-n26")!)
-        showDescription()
     }
 
     private func showCard(room: RoomData) {
@@ -169,6 +181,7 @@ class VenueController : UIViewController, MGLMapViewDelegate, BaloonContainer, U
 
         for card in cards {
             let view = SessionCardView()
+            view.displayTime = true
             view.card = card
             view.baloonContainer = self
             setupCard(view)
@@ -202,6 +215,7 @@ class VenueController : UIViewController, MGLMapViewDelegate, BaloonContainer, U
 
     private func showDescription() {
         descriptionActive = true
+        closeButton.isHidden = false
         self.distance.constant = 50
         UIView.animate(withDuration: 0.3, animations: {
             self.view.layoutIfNeeded()
@@ -210,8 +224,9 @@ class VenueController : UIViewController, MGLMapViewDelegate, BaloonContainer, U
 
     private func hideDescription() {
         descriptionActive = false
+        closeButton.isHidden = true
         hide()
-        self.distance.constant = self.view.frame.height - 200
+        self.distance.constant = self.view.frame.height - 300
         UIView.animate(withDuration: 0.3, animations: {
             self.view.layoutIfNeeded()
         })
@@ -222,6 +237,7 @@ class VenueController : UIViewController, MGLMapViewDelegate, BaloonContainer, U
     }
 
     private var active: Baloon? = nil
+
     func show(popup: Baloon) {
         active?.hide()
         active = popup

@@ -5,6 +5,7 @@ import android.widget.*
 import androidx.appcompat.app.*
 import androidx.navigation.*
 import androidx.navigation.ui.*
+import com.google.firebase.analytics.*
 import com.mapbox.mapboxsdk.*
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.kotlinconf.*
@@ -16,12 +17,16 @@ import java.net.*
 
 class MainActivity : AppCompatActivity() {
     private lateinit var errorsWatcher: Closeable
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val context = ApplicationContext(this, R.drawable.app_icon)
+        val context = ApplicationContext(this, R.drawable.notification_icon)
         KotlinConf.service = ConferenceService(context)
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
+
+        firebaseAnalytics.logEvent(FirebaseAnalytics.Event.APP_OPEN, null)
 
         errorsWatcher = KotlinConf.service.errors.watch { cause ->
             when (cause) {
@@ -29,16 +34,13 @@ class MainActivity : AppCompatActivity() {
                     putExtra("page", PrivacyPolicyFragment.name)
                 }
                 is TooEarlyVote -> {
-                    Toast.makeText(this, "Session is not started", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "You cannot rate the session before it starts.", Toast.LENGTH_LONG).show()
                 }
                 is TooLateVote -> {
-                    Toast.makeText(this, "Too late for voting", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Rating is only permitted up to 2 hours after the session end.", Toast.LENGTH_LONG).show()
                 }
                 is ConnectException -> {
-                    Toast.makeText(this, "Check your internet connection.", Toast.LENGTH_LONG).show()
-                }
-                else -> {
-                    Toast.makeText(this, cause.message, Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Failed to get data from server, please check your internet connection.", Toast.LENGTH_LONG).show()
                 }
             }
         }

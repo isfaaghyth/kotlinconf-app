@@ -10,7 +10,6 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.serialization.serialization
 import io.ktor.util.*
-import io.ktor.websocket.*
 
 internal fun Application.main() {
     val config = environment.config
@@ -20,6 +19,7 @@ internal fun Application.main() {
     val sessionizeConfig = config.config("sessionize")
     val sessionizeUrl = sessionizeConfig.property("url").getString()
     val sessionizeInterval = sessionizeConfig.property("interval").getString().toLong()
+    val adminSecret = serviceConfig.property("secret").getString()
     val production = mode == "production"
 
     if (!production) {
@@ -31,7 +31,6 @@ internal fun Application.main() {
     install(Compression)
     install(PartialContent)
     install(AutoHeadResponse)
-    install(WebSockets)
     install(XForwardedHeaderSupport)
     install(StatusPages) {
         exception<ServiceUnavailable> { _ ->
@@ -73,7 +72,8 @@ internal fun Application.main() {
             default("static/index.html")
             files("static")
         }
-        api(database, production, sessionizeUrl)
+
+        api(database, sessionizeUrl, adminSecret)
     }
 
     launchSyncJob(sessionizeUrl, sessionizeInterval)
@@ -90,4 +90,4 @@ private fun Route.authenticate() {
     }
 }
 
-class KotlinConfPrincipal(val token: String) : Principal
+internal class KotlinConfPrincipal(val token: String) : Principal

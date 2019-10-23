@@ -13,37 +13,24 @@ private val CHANNEL_ID = "KOTLIN_CONF_CHANNEL_ID"
 actual class NotificationManager actual constructor(
     private val context: ApplicationContext
 ) {
-    actual suspend fun requestPermission(): Boolean {
+    actual fun requestPermission() {
         createNotificationChannel(context.activity)
-        return true
     }
 
-    actual suspend fun schedule(
-        sessionData: SessionData
-    ): String? {
-        val date = sessionData.startsAt - 15 * 60 * 1000
-        val delay = date.timestamp - GMTDate().timestamp
-        if (delay <= 0) {
-            return null
-        }
-
-        val id = sessionData.id.hashCode()
-        scheduleNotification(delay, sessionData.title, "Starts in 15 minutes", id)
+    actual fun schedule(delay: Long, title: String, message: String): String? {
+        val id = title.hashCode()
+        scheduleNotification(delay, title, message, id)
         return id.toString()
     }
 
-    actual fun cancel(sessionData: SessionData) {
+    actual fun cancel(title: String) {
         val appContext = context.activity
         val notificationIntent = Intent(appContext, Publisher::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
-            appContext, sessionData.id.hashCode(), notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT
+            appContext, title.hashCode(), notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT
         )
         val alarmManager = appContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(pendingIntent)
-    }
-
-    actual suspend fun isEnabled(): Boolean {
-        return true
     }
 
     private fun scheduleNotification(

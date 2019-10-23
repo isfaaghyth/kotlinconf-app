@@ -9,6 +9,7 @@ class FeedData(
 
 @Serializable
 class FeedPost(
+    val id_str: String,
     val created_at: String,
     val text: String,
     val user: FeedUser,
@@ -17,6 +18,7 @@ class FeedPost(
 
 @Serializable
 class FeedUser(
+    val id_str: String,
     val name: String,
     val profile_image_url_https: String,
     val screen_name: String

@@ -103,10 +103,10 @@ class ScheduleController : UIViewController, UITableViewDelegate, UITableViewDat
 
     private func showSearch() {
         self.searchActive = true
-       self.scheduleTable.reloadData()
+        self.scheduleTable.reloadData()
 
-       self.searchContainer.isHidden = false
-       self.headerView.isHidden = true
+        self.searchContainer.isHidden = false
+        self.headerView.isHidden = true
     }
 
     @IBAction func onSearchCancel(_ sender: Any) {
@@ -215,6 +215,10 @@ class ScheduleController : UIViewController, UITableViewDelegate, UITableViewDat
         updateSearchResults()
     }
 
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        self.view.endEditing(false)
+    }
+
     private func updateSearchResults() {
         let query = searchBar.text?.lowercased()
 
@@ -228,8 +232,6 @@ class ScheduleController : UIViewController, UITableViewDelegate, UITableViewDat
                 return title.contains(query!) || speakers.contains(query!) || room.contains(query!)
             }
         }
-
-
 
         scheduleTable.reloadData()
     }

@@ -13,18 +13,17 @@ import java.time.*
 import java.time.format.*
 import java.util.*
 
-private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
-
 internal fun Routing.api(
     database: Database,
     sessionizeUrl: String,
+    oldSessionizeUrl: String,
     adminSecret: String
 ) {
     apiUsers(database)
     apiAll(database)
     apiVote(database, adminSecret)
     apiFavorite(database)
-    apiSynchronize(sessionizeUrl, adminSecret)
+    apiSynchronize(sessionizeUrl, oldSessionizeUrl, adminSecret)
     apiTwitter()
     apiTime(adminSecret)
     apiLive(adminSecret)
@@ -132,6 +131,12 @@ private fun Routing.apiVote(
 
             call.respond(status)
         }
+        post("required/{count}") {
+            call.validateSecret(adminSecret)
+            val count = call.parameters["count"] ?: throw BadRequest()
+            votesRequired = count.toInt()
+            call.respond(HttpStatusCode.OK)
+        }
         delete {
             val principal = call.validatePrincipal(database) ?: throw Unauthorized()
             val vote = call.receive<VoteData>()
@@ -144,23 +149,36 @@ private fun Routing.apiVote(
 
 /*
 GET http://localhost:8080/all
+GET http://localhost:8080/all2019
 Accept: application/json
 Authorization: Bearer 1238476512873162837
 */
 private fun Routing.apiAll(database: Database) {
     get("all") {
-        val data = getSessionizeData()
-        val principal = call.validatePrincipal(database)
-        val responseData = if (principal != null) {
-            val votes = database.getVotes(principal.token)
-            val favorites = database.getFavorites(principal.token)
-            ConferenceData(data, favorites, votes, liveInfo())
-        } else {
-            ConferenceData(data, liveVideos = liveInfo())
-        }
-
-        call.respond(responseData)
+        respondAll(call, database, old = true)
     }
+    get("all2019") {
+        respondAll(call, database, old = false)
+    }
+}
+
+private suspend fun respondAll(
+    call: ApplicationCall,
+    database: Database,
+    old: Boolean
+) {
+    val data = if (old) getOldSessionizeData() else getSessionizeData()
+    val principal = call.validatePrincipal(database)
+    val (votes, favorites) = if (principal != null) {
+        val votes = database.getVotes(principal.token)
+        val favorites = database.getFavorites(principal.token)
+        votes to favorites
+    } else {
+        emptyList<VoteData>() to emptyList<String>()
+    }
+
+    val responseData = ConferenceData(data, favorites, votes,  liveInfo(), votesRequired)
+    call.respond(responseData)
 }
 
 private fun Routing.apiTwitter() {
@@ -204,11 +222,11 @@ private fun Routing.apiLive(adminSecret: String) {
 /*
 GET http://localhost:8080/sessionizeSync
 */
-private fun Routing.apiSynchronize(sessionizeUrl: String, adminSecret: String) {
+private fun Routing.apiSynchronize(sessionizeUrl: String, oldSessionizeUrl: String, adminSecret: String) {
     post("sessionizeSync") {
         call.validateSecret(adminSecret)
 
-        synchronizeWithSessionize(sessionizeUrl)
+        synchronizeWithSessionize(sessionizeUrl, oldSessionizeUrl)
         call.respond(HttpStatusCode.OK)
     }
 }

@@ -225,7 +225,7 @@
                 android:layout_marginBottom="77dp"
                 android:fontFamily="sans-serif"
                 android:lineSpacingExtra="9sp"
-                android:text="Now you can already check our speakers and schedule and add some talks to favourites"
+                android:text="@string/before_text"
                 android:textColor="#ffffff"
                 android:textSize="15sp"
                 android:textStyle="normal"

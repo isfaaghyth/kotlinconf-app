@@ -44,19 +44,6 @@
             app:layout_constraintTop_toBottomOf="@id/map_tabs"
             app:layout_constraintVertical_bias="0.0"/>
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/map_track"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            android:layout_marginRight="25dp"
-            android:layout_marginBottom="250dp"
-            android:background="@color/white"
-            android:backgroundTint="@color/white"
-            app:borderWidth="0dp"
-            android:src="@drawable/location_big"
-        />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout

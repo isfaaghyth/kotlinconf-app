@@ -183,7 +183,7 @@ class HomeController : Fragment() {
     private fun View.setupVoteMeter() {
         KotlinConf.service.votes.watch {
             val size = it.size
-            val progress = min(100.0, 100.0 * size / VOTES_FOR_TSHIRT).toInt()
+            val progress = min(100.0, 100.0 * size / KotlinConf.service.votesCountRequired()).toInt()
 
             vote_meter.progress = progress
             val finished = if (progress == 100) View.VISIBLE else View.INVISIBLE

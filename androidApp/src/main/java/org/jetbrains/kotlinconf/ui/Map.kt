@@ -4,13 +4,10 @@ import android.graphics.*
 import android.os.*
 import android.view.*
 import android.widget.*
-import androidx.core.view.*
 import androidx.fragment.app.*
 import androidx.recyclerview.widget.*
 import com.google.android.material.bottomsheet.*
 import com.google.android.material.tabs.*
-import com.mapbox.mapboxsdk.location.*
-import com.mapbox.mapboxsdk.location.modes.*
 import com.mapbox.mapboxsdk.maps.*
 import kotlinx.android.synthetic.main.fragment_map.*
 import kotlinx.android.synthetic.main.fragment_map.view.*
@@ -126,14 +123,6 @@ class MapController : Fragment() {
                 return@addOnMapClickListener true
             }
         }
-
-        map_track.setOnClickListener {
-            map_mapview.getMapAsync { map ->
-                map.locationComponent.apply {
-                    cameraMode = if (cameraMode == CameraMode.TRACKING) CameraMode.NONE else CameraMode.TRACKING
-                }
-            }
-        }
     }
 
     private fun showPartner(partner: Partner) {
@@ -195,21 +184,7 @@ class MapController : Fragment() {
 
     private fun View.showFloor(index: Int) {
         map_mapview.getMapAsync { map ->
-            map.setStyle(floors[index]) { style ->
-                val tracking = KotlinConf.service.isLocationEnabled()
-                map_track.isVisible = tracking
-                if (tracking) {
-                    val options = LocationComponentActivationOptions
-                        .builder(context, style)
-                        .build()
-
-                    map.locationComponent.apply {
-                        activateLocationComponent(options)
-                        isLocationComponentEnabled = true
-                        renderMode = RenderMode.NORMAL
-                    }
-                }
-            }
+            map.setStyle(floors[index])
         }
     }
 }

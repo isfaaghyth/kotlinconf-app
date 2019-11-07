@@ -37,6 +37,8 @@ class TweetHolder(private val view: View) : RecyclerView.ViewHolder(view) {
                 Glide.with(view)
                     .load(photoUrl)
                     .into(tweet_photo)
+            } else {
+                tweet_photo.setImageResource(android.R.color.transparent)
             }
         }
     }

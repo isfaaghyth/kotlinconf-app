@@ -37,7 +37,6 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
     private var userId: String? by storage(NullableSerializer(String.serializer())) { null }
     private var firstLaunch: Boolean by storage(Boolean.serializer()) { true }
     private var notificationsAllowed: Boolean by storage(Boolean.serializer()) { false }
-    private var locationAllowed: Boolean by storage(Boolean.serializer()) { false }
 
     private var serverTime = GMTDate()
     private var requestTime = GMTDate()
@@ -48,7 +47,6 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
     private var cards: MutableMap<String, SessionCard> = mutableMapOf()
 
     private val notificationManager = NotificationManager(context)
-    private val locationManager = LocationManager(context)
 
     /**
      * ------------------------------
@@ -61,6 +59,8 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
      */
     private val _publicData by storage.live { SessionizeData() }
     val publicData = _publicData.wrap()
+
+    private var _votesCountRequired: Int = 10
 
     /**
      * Favorites list.
@@ -189,13 +189,6 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
         }
 
         return result
-    }
-
-    /**
-     * Check if the user clicked allow in our and system dialogs.
-     */
-    fun isLocationEnabled(): Boolean {
-        return locationAllowed && locationManager.isEnabled()
     }
 
     /**
@@ -338,14 +331,6 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
     }
 
     /**
-     * Request permissions to get location.
-     */
-    fun requestLocationPermission() {
-        locationAllowed = true
-        locationManager.requestPermission()
-    }
-
-    /**
      * Vote for session.
      */
     fun vote(sessionId: String, rating: RatingData) {
@@ -371,6 +356,11 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
 
         }
     }
+
+    /**
+     * Get required count of votes.
+     */
+    fun votesCountRequired(): Int = _votesCountRequired
 
     /**
      * Mark session as favorite.
@@ -432,6 +422,7 @@ class ConferenceService(val context: ApplicationContext) : CoroutineScope {
                     putAll(votes.mapNotNull { vote -> vote.rating?.let { vote.sessionId to it } })
                 }
                 _votes.offer(votesMap)
+                _votesCountRequired = votesCountRequired
 
                 updateModel()
             }

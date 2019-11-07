@@ -18,6 +18,7 @@ internal fun Application.main() {
     log.info("Environment: $mode")
     val sessionizeConfig = config.config("sessionize")
     val sessionizeUrl = sessionizeConfig.property("url").getString()
+    val oldSessionizeUrl = sessionizeConfig.property("oldUrl").getString()
     val sessionizeInterval = sessionizeConfig.property("interval").getString().toLong()
     val adminSecret = serviceConfig.property("secret").getString()
     val production = mode == "production"
@@ -73,10 +74,10 @@ internal fun Application.main() {
             files("static")
         }
 
-        api(database, sessionizeUrl, adminSecret)
+        api(database, sessionizeUrl, oldSessionizeUrl, adminSecret)
     }
 
-    launchSyncJob(sessionizeUrl, sessionizeInterval)
+    launchSyncJob(sessionizeUrl, oldSessionizeUrl, sessionizeInterval)
     launchTwitterJob()
 }
 

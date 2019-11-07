@@ -10,7 +10,8 @@ let partnersNames = [
     "gradle",
     "n26",
     "kodein",
-    "badoo"
+    "badoo",
+    "jetbrains"
 ]
 
 let partnersLogos = [
@@ -22,7 +23,8 @@ let partnersLogos = [
     "gradle": "logoGradleBig",
     "n26": "logoN26Big",
     "kodein": "logoKodeinBig",
-    "badoo": "logoBadooBig"
+    "badoo": "logoBadooBig",
+    "jetbrains": "logoJetBrains"
 ]
 
 let ConfPartners = Partners()

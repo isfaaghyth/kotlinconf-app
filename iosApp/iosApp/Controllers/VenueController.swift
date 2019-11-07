@@ -27,7 +27,6 @@ class VenueController : UIViewController, MGLMapViewDelegate, BaloonContainer, U
     private var initial: CGFloat = 44.0
     private var floor: Floor = .ground
     private var descriptionActive: Bool = false
-    @IBOutlet weak var locateButton: UIButton!
 
     private let mapPhotos = [
         7972: "keynote",
@@ -65,10 +64,6 @@ class VenueController : UIViewController, MGLMapViewDelegate, BaloonContainer, U
         if (room != nil) {
             showCard(room: room!)
         }
-
-        if (!Conference.isLocationEnabled()) {
-            locateButton.isHidden = true
-        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -79,16 +74,11 @@ class VenueController : UIViewController, MGLMapViewDelegate, BaloonContainer, U
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         self.tabBarController?.tabBar.tintColor = UIColor.deepSkyBlue
-
-        if (Conference.isLocationEnabled()) {
-            mapView.showsUserLocation = true
-        }
-
         showFloor()
-    }
 
-    func mapView(_ mapView: MGLMapView, annotationCanShowCallout annotation: MGLAnnotation) -> Bool {
-        return Conference.isLocationEnabled()
+        mapView.latitude = 55.638271
+        mapView.longitude = 12.578472
+        mapView.zoomLevel = 16
     }
 
     @IBAction func groundFloorSelect(_ sender: Any) {
@@ -99,15 +89,6 @@ class VenueController : UIViewController, MGLMapViewDelegate, BaloonContainer, U
     @IBAction func firstFloorSelect(_ sender: Any) {
         floor = .first
         showFloor()
-    }
-
-    @IBAction func locateTouch(_ sender: Any) {
-        if (mapView.userTrackingMode == .none) {
-            mapView.userTrackingMode = .follow
-        } else {
-            mapView.userTrackingMode = .none
-            mapView.resetPosition()
-        }
     }
 
     @IBAction func onClose(_ sender: Any) {

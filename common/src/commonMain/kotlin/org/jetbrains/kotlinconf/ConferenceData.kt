@@ -11,7 +11,8 @@ class ConferenceData(
     val allData: SessionizeData = SessionizeData(),
     val favorites: List<String> = emptyList(),
     val votes: List<VoteData> = emptyList(),
-    val liveVideos: List<LiveVideo> = emptyList()
+    val liveVideos: List<LiveVideo> = emptyList(),
+    val votesCountRequired: Int
 )
 
 @Serializable

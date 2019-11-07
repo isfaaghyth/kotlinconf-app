@@ -17,7 +17,8 @@ internal val PARTNER_LOGOS = mapOf(
     "gradle" to R.drawable.logo_gradle_big,
     "n26" to R.drawable.logo_n26_big,
     "kodein" to R.drawable.logo_kodein_big,
-    "badoo" to R.drawable.logo_badoo
+    "badoo" to R.drawable.logo_badoo,
+    "jetbrains" to R.drawable.logo_jetbrains
 )
 
 class PartnerActivity : AppCompatActivity() {

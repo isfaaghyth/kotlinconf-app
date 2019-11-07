@@ -5,7 +5,6 @@ class WelcomeController : UIPageViewController, UIPageViewControllerDelegate {
     private(set) lazy var pages: [UIViewController] = {
         return [
             createPage(name: "WelcomePrivacyPolicyController"),
-            createPage(name: "WelcomeLocationController"),
             createPage(name: "WelcomeNotificationsController")
         ]
     }()
@@ -59,37 +58,6 @@ class WelcomePrivacyPolicyController : UIViewController {
         let url = URL(string: "https://www.jetbrains.com/company/privacy.html")
         UIApplication.shared.open(url!)
 
-    }
-
-    @IBAction func nextTouch(_ sender: Any) {
-        nextPage()
-    }
-}
-
-class WelcomeLocationController : UIViewController, CLLocationManagerDelegate {
-    @IBOutlet weak var nextButton: UIButton!
-    private let manager = CLLocationManager()
-
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        if (hasParentWelcome()) {
-            nextButton.setTitle("Next", for: .normal)
-        } else {
-            nextButton.setTitle("Close", for: .normal)
-        }
-    }
-
-    @IBAction func acceptTouch(_ sender: Any) {
-        Conference.requestLocationPermission()
-        let status = CLLocationManager.authorizationStatus()
-        if status == .notDetermined {
-            manager.delegate = self
-            manager.requestWhenInUseAuthorization()
-        }
-    }
-    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        nextPage()
     }
 
     @IBAction func nextTouch(_ sender: Any) {

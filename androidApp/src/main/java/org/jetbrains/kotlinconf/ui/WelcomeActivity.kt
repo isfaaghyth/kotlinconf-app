@@ -9,7 +9,6 @@ import android.view.View.*
 import androidx.appcompat.app.*
 import androidx.fragment.app.*
 import kotlinx.android.synthetic.main.activity_welcome.*
-import kotlinx.android.synthetic.main.fragment_location.view.*
 import kotlinx.android.synthetic.main.fragment_notifications.view.*
 import kotlinx.android.synthetic.main.fragment_privacy.view.*
 import org.jetbrains.kotlinconf.*
@@ -24,7 +23,6 @@ internal class WelcomeActivity : AppCompatActivity() {
 
         val pages = listOf(
             PrivacyPolicyFragment.name,
-            LocationFragment.name,
             NotificationFragment.name
         )
 
@@ -32,7 +30,6 @@ internal class WelcomeActivity : AppCompatActivity() {
 
         val fragments = listOf(
             PrivacyPolicyFragment(),
-            LocationFragment(),
             NotificationFragment()
         )
 
@@ -71,28 +68,6 @@ internal class PrivacyPolicyFragment : Fragment() {
 
     companion object {
         val name: String = "privacy policy"
-    }
-}
-
-internal class LocationFragment : Fragment() {
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? = inflater.inflate(R.layout.fragment_location, container, false).apply {
-        welcome_location_allow.setOnClickListener {
-            KotlinConf.service.requestLocationPermission()
-            it.isEnabled = false
-
-            activity!!.welcome_pager.currentItem += 1
-        }
-        welcome_location_next.setOnClickListener {
-            activity!!.welcome_pager.currentItem += 1
-        }
-    }
-
-    companion object {
-        val name: String = "location"
     }
 }
 

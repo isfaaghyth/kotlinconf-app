@@ -28,7 +28,7 @@
             android:layout_marginLeft="16dp"
             android:layout_marginTop="23dp"
             android:fontFamily="@font/druk_font"
-            android:text="SEND YOU REMINDER OF THE FAVOURITE TALKS?"
+            android:text="@string/do_you_want_reminders"
             android:textColor="@color/dark_grey"
             android:textSize="44sp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -59,7 +59,7 @@
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@id/privacy_logo"
-            android:text="Get reminders about the events you just don’t want to miss. You will get a reminder before the event happens so you have plenty of time to get there."
+            android:text="@string/notifications_description_text"
         />
 
         <LinearLayout
@@ -71,14 +71,14 @@
             android:layout_marginTop="25dp"
         >
             <Button
-                android:id="@+id/welcome_notifications_allow"
+                android:id="@+id/welcome_close"
                 android:layout_height="48dp"
                 android:layout_width="wrap_content"
                 android:layout_marginLeft="17dp"
                 android:layout_marginEnd="8dp"
                 android:layout_marginRight="8dp"
                 android:layout_marginBottom="21dp"
-                android:text="Allow"
+                android:text="Reject"
                 android:textSize="15sp"
                 android:background="@drawable/welcome_button"
                 android:textColor="@color/dark_grey"
@@ -86,10 +86,10 @@
                 android:layout_marginStart="17dp"/>
 
             <Button
-                android:id="@+id/welcome_close"
+                android:id="@+id/welcome_notifications_allow"
                 android:layout_width="wrap_content"
                 android:layout_height="48dp"
-                android:text="Close"
+                android:text="Allow"
                 android:textSize="15sp"
                 android:textColor="@color/dark_grey"
                 android:layout_marginBottom="21dp"
